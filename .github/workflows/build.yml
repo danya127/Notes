@@ -1,43 +1,42 @@
 name: Build APK
 on: [push]
 
+permissions:  # Добавьте этот блок!
+  contents: read
+  packages: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Add swap memory
-        run: |
-          sudo fallocate -l 4G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.8
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-11-jdk autoconf libtool pkg-config zlib1g-dev
-          pip install buildozer cython==0.29.32
+          sudo apt-get install -y \
+            git zip unzip openjdk-11-jdk \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev
 
-      - name: Install NDK
+      - name: Install Python tools
         run: |
-          mkdir -p ~/.buildozer/android/platform
-          wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-          unzip android-ndk-r25b-linux.zip -d ~/.buildozer/android/platform
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.32
 
       - name: Build APK
         run: |
           buildozer -v android debug
-          mv bin/*.apk .
+          ls -la bin/
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: encryptednotes-apk
-          path: "*.apk"
+          name: app-release
+          path: bin/*.apk
